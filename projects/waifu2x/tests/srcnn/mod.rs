@@ -2,7 +2,7 @@ use image::DynamicImage;
 use tch::Device;
 use tch::nn::VarStore;
 
-use sub_projects::SRCNN;
+use waifu2x::SRCNN;
 
 #[test]
 pub fn run() {

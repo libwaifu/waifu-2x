@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
-use image::{DynamicImage, EncodableLayout, Rgb32FImage, Rgba32FImage, RgbaImage, RgbImage};
+use image::{DynamicImage, EncodableLayout, Rgb32FImage, Rgba32FImage};
 use image::imageops::FilterType;
-use tch::{Device, Kind, nn::ModuleT, TchError, Tensor};
+use tch::{ Kind,  TchError, Tensor};
 use tch::nn::{Conv2D, conv2d, Module, VarStore};
 
 #[derive(Debug)]
@@ -45,19 +45,23 @@ impl SRCNN {
     }
     /// Enlarge the picture to twice, support transparent access
     pub fn resize_image2x(&self, image: &DynamicImage) -> Result<Rgba32FImage, TchError> {
-        let w = (image.width() * 2 + 6) as u32;
-        let h = (image.height() * 2 + 6) as u32;
-        let mut rgba = image.resize(w, h, FilterType::CatmullRom).to_rgba32f();
-        let rgb = DynamicImage::ImageRgba32F(rgba.clone()).to_rgb8();
-        let tensor = Tensor::f_of_data_size(rgb.as_bytes(), &[1, 3, rgba.height() as i64, rgba.width() as i64], Kind::Float)?;
-        let mut out = vec![];
-        self.forward(&tensor).f_copy_data(&mut out, rgba.height() as usize * rgba.width() as usize * 3)?;
-        let rgb = match Rgb32FImage::from_raw(rgba.height(), rgba.width(), out) {
-            None => { panic!("Failed to convert to rgb image"); }
+        let w = (image.width() * 2 + 14) as u32;
+        let h = (image.height() * 2 + 14) as u32;
+        let rgb = image.resize(w, h, FilterType::CatmullRom).to_rgb32f();
+        let tensor = Tensor::f_of_data_size(rgb.as_bytes(), &[1, 3, rgb.height() as i64, rgb.width() as i64], Kind::Float)?;
+        let count = (image.width() * 2 * image.height() * 2 * 3) as usize;
+        let mut out = vec![0.0; count];
+        let out_tensor = self.forward(&tensor);
+        println!("Tensor: {:?}, {}", out_tensor.size(),  out_tensor.numel());
+        println!("Image: {}", image.width() * 2 * image.height() * 2 * 3);
+        out_tensor.f_copy_data(&mut out, out_tensor.numel())?;
+        let rgb = match Rgb32FImage::from_raw(image.width() * 2, image.height() * 2, out) {
             Some(s) => {
                 s
             }
+            None => { panic!("Failed to convert to rgb image"); }
         };
+        let mut rgba = image.resize(image.width() * 2, image.height() * 2, FilterType::CatmullRom).to_rgba32f();
         for (x, y, pixel) in rgb.enumerate_pixels() {
             let target = rgba.get_pixel_mut(x, y);
             target.0[0] = pixel.0[0];
