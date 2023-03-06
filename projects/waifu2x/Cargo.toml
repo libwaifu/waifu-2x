@@ -12,6 +12,7 @@ edition = "2021"
 
 [dependencies]
 tch = "0.10.3"
+safetensors = "0.2.8"
 
 [dev-dependencies]
 
