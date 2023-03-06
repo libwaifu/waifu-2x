@@ -1,9 +1,9 @@
-use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-use tch::{Device, Kind, nn::ModuleT, Tensor};
+use image::{DynamicImage, EncodableLayout, Rgb32FImage, Rgba32FImage, RgbaImage, RgbImage};
+use image::imageops::FilterType;
+use tch::{Device, Kind, nn::ModuleT, TchError, Tensor};
 use tch::nn::{Conv2D, conv2d, Module, VarStore};
-
 
 #[derive(Debug)]
 pub struct SRCNN {
@@ -37,6 +37,35 @@ impl SRCNN {
             // 512 * 256 * 128 * 128
         }
     }
+    /// Low-level api, used to enlarge images in batches
+    ///
+    /// **Attention**: `target = (N, 3, w + 6, h + 6)`
+    pub fn resize(&self, target: &Tensor) -> Tensor {
+        self.forward(target)
+    }
+    /// Enlarge the picture to twice, support transparent access
+    pub fn resize_image2x(&self, image: &DynamicImage) -> Result<Rgba32FImage, TchError> {
+        let w = (image.width() * 2 + 6) as u32;
+        let h = (image.height() * 2 + 6) as u32;
+        let mut rgba = image.resize(w, h, FilterType::CatmullRom).to_rgba32f();
+        let rgb = DynamicImage::ImageRgba32F(rgba.clone()).to_rgb8();
+        let tensor = Tensor::f_of_data_size(rgb.as_bytes(), &[1, 3, rgba.height() as i64, rgba.width() as i64], Kind::Float)?;
+        let mut out = vec![];
+        self.forward(&tensor).f_copy_data(&mut out, rgba.height() as usize * rgba.width() as usize * 3)?;
+        let rgb = match Rgb32FImage::from_raw(rgba.height(), rgba.width(), out) {
+            None => { panic!("Failed to convert to rgb image"); }
+            Some(s) => {
+                s
+            }
+        };
+        for (x, y, pixel) in rgb.enumerate_pixels() {
+            let target = rgba.get_pixel_mut(x, y);
+            target.0[0] = pixel.0[0];
+            target.0[1] = pixel.0[1];
+            target.0[2] = pixel.0[2];
+        }
+        Ok(rgba)
+    }
 }
 
 impl Module for SRCNN {
@@ -59,25 +88,4 @@ impl Module for SRCNN {
 }
 
 
-#[test]
-pub fn run() {
-    // let m = tch::vision::mnist::load_dir("data")?;
-    let vs = VarStore::new(Device::cuda_if_available());
-    let net = SRCNN::new(&vs);
-    for variable in vs.variables() {
-        println!("{:?}", variable);
-    }
-    let result = net.forward_t(&Tensor::zeros(&[2, 3, 128, 128], (Kind::Float, Device::Cpu)), false);
-    println!("{:?}", result);
-}
 
-
-fn map() {
-    let mut map: BTreeMap<String, String> = BTreeMap::new();
-    map.insert("convolution_W".to_string(), "layer1.weight".to_string());
-    map.insert("convolution_B".to_string(), "layer1.bias".to_string());
-    for i in 1..=5 {
-        map.insert(format!("convolution{}_W", i), format!("layer{}.weight", i));
-        map.insert(format!("convolution{}_B", i), format!("layer{}.bias", i));
-    }
-}
