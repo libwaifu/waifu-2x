@@ -1,18 +1,25 @@
 [package]
 name = "waifu2x"
-version = "0.0.0"
+version = "0.1.0"
 authors = ["Aster <192607617@qq.com>"]
-description = "..."
+description = "Waifu2X super resolution in rust"
 repository = "https://github.com/oovm/sub_projects"
-documentation = "https://docs.rs/sub_projects"
+documentation = "https://docs.rs/waifu2x"
 readme = "Readme.md"
 license = "MPL-2.0"
 edition = "2021"
 
 [dependencies]
-image = "0.24.5"
-tch = "0.10.3"
-safetensors = "0.2.8"
+
+[dependencies.image]
+version = "0.24.5"
+features = ["png", "jpeg", "jpeg_rayon"]
+default-features = false
+
+[dependencies.ort]
+version = "1.14.1"
+#features = []
+default-features = false
 
 [dev-dependencies]
 
