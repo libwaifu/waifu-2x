@@ -4,8 +4,7 @@ default-members = [
     "projects/waifu2x",
 ]
 exclude = [
-    "projects/.DS_Store",
-    "projects/waifu2x-models",
+    "projects/.DS_Store"
 ]
 
 [profile.release]

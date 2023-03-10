@@ -1,8 +1,12 @@
 #![doc = include_str!("../Readme.md")]
 
-pub use crate::conv7::Convolution7;
-pub use crate::srcnn::SRCNN;
+pub use errors::DenoiseLevel;
 
-mod srcnn;
+pub use crate::conv7::Convolution7;
+pub use crate::conv7trans::Convolution7Transpose;
+
 mod conv7;
-mod cunet;
+mod conv7trans;
+// mod cunet;
+mod errors;
+mod utils;

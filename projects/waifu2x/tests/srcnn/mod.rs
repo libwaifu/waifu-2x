@@ -3,13 +3,13 @@ use image::io::Reader;
 use tch::Device;
 use tch::nn::VarStore;
 
-use waifu2x::SRCNN;
+use waifu2x::Convolution7;
 
 #[test]
 pub fn run() {
     let image = Reader::open("tests/rename/miku_small_noisy_waifu2x.png").unwrap().with_guessed_format().unwrap().decode().unwrap();
     let vs = VarStore::new(Device::cuda_if_available());
-    let net = SRCNN::new(&vs);
+    let net = Convolution7::new(&vs);
     // for variable in vs.variables() {
     //     println!("{:?}", variable);
     // }
