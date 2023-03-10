@@ -1,6 +1,3 @@
-[submodule "projects/waifu2x/projects/waifu2x-models"]
-	path = projects/waifu2x/projects/waifu2x-models
-	url = https://huggingface.co/oovm/waifu2x
 [submodule "projects/waifu2x-models"]
 	path = projects/waifu2x-models
 	url = https://huggingface.co/oovm/waifu-2x
