@@ -13,9 +13,7 @@ pub fn cancel_dimension(input: &mut Input, dimensions: &[usize]) {
     for dim in dimensions {
         match input.dimensions.get_mut(*dim) {
             Some(s) => *s = None,
-            None => {
-                log::info!("")
-            }
+            None => {}
         }
     }
 }

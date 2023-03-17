@@ -3,8 +3,8 @@ use std::{
     sync::Arc,
 };
 
-use image::{imageops::FilterType, DynamicImage, Rgb32FImage};
-use ndarray::ArrayD;
+use image::{imageops::FilterType, DynamicImage, Pixel, Rgb32FImage, RgbImage};
+use ndarray::{Array4, ArrayD};
 use ort::{tensor::InputTensor, Environment, OrtResult, Session};
 
 use crate::{
@@ -31,7 +31,7 @@ impl Convolution7 {
     // 142 -> 128
     pub fn upscale_2x(&mut self, image: &DynamicImage) -> OrtResult<DynamicImage> {
         let upscale = image.resize_exact(image.width() * 2 + 14, image.height() * 2 + 14, FilterType::CatmullRom);
-        let tensor = one_rgb_to_tensor(upscale.to_rgb32f());
+        let tensor = one_rgb_to_tensor(upscale.to_rgb8());
         println!("{:?}", self.session.inputs);
         let out = self.session.run(&[tensor])?;
 
@@ -56,8 +56,12 @@ fn select_net(path: &Path, level: DenoiseLevel) -> PathBuf {
     model
 }
 
-fn one_rgb_to_tensor(image: Rgb32FImage) -> InputTensor {
-    let shape = vec![1, image.width() as usize, image.height() as usize, 3];
-    let array = ArrayD::from_shape_vec(shape, image.as_raw().to_vec()).unwrap();
-    InputTensor::FloatTensor(array)
+fn one_rgb_to_tensor(image: RgbImage) -> InputTensor {
+    let shape = (1, 3, image.height() as usize, image.width() as usize);
+    let mut array = Array4::from_shape_fn(shape, |(_, c, j, i)| {
+        let pixel = image.get_pixel(i as u32, j as u32);
+        let channels = pixel.channels();
+        (channels[c] as f32) / 255.0
+    });
+    InputTensor::FloatTensor(array.into_dyn())
 }
